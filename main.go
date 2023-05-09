@@ -22,11 +22,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = createDB(db, dbName)
+	err = resetDB(db, dbName)
 	if err != nil {
 		panic(err)
 	}
 	db.Close()
+}
+
+func resetDB(db *sql.DB, name string) error {
+	_, err := db.Exec("DROP DATABASE IF EXISTS " + name)
+	if err != nil {
+		return err
+	}
+	return createDB(db, name)
 }
 
 func createDB(db *sql.DB, name string) error {
