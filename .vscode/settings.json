@@ -2,6 +2,7 @@
     "cSpell.words": [
         "dbname",
         "psql",
-        "sslmode"
+        "sslmode",
+        "VARCHAR"
     ]
 }

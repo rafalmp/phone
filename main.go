@@ -28,13 +28,24 @@ func main() {
 	db, err = sql.Open("postgres", psqlInfo)
 	checkErr(err)
 	defer db.Close()
-	checkErr(db.Ping())
+
+	checkErr(createPhoneNumbersTable(db))
 }
 
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func createPhoneNumbersTable(db *sql.DB) error {
+	statement := `
+	CREATE TABLE IF NOT EXISTS phone_numbers (
+		id SERIAL,
+		value VARCHAR(255)
+	)`
+	_, err := db.Exec(statement)
+	return err
 }
 
 func resetDB(db *sql.DB, name string) error {
