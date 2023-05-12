@@ -30,12 +30,25 @@ func main() {
 	defer db.Close()
 
 	checkErr(createPhoneNumbersTable(db))
+	id, err := insertPhone(db, "1234567890")
+	checkErr(err)
+	fmt.Println("New record ID:", id)
 }
 
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func insertPhone(db *sql.DB, phone string) (int, error) {
+	statement := `INSERT INTO phone_numbers(value) VALUES($1) RETURNING id`
+	var id int
+	err := db.QueryRow(statement, phone).Scan(&id)
+	if err != nil {
+		return -1, err
+	}
+	return id, nil
 }
 
 func createPhoneNumbersTable(db *sql.DB) error {
