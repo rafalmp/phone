@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"flag"
 	"fmt"
 
 	_ "github.com/lib/pq" // https://www.calhoun.io/why-we-import-sql-drivers-with-the-blank-identifier/
@@ -16,23 +17,41 @@ const (
 	dbName   = "phone"
 )
 
-func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", host, port, user, password)
-	db, err := sql.Open("postgres", psqlInfo)
-	checkErr(err)
-	err = resetDB(db, dbName)
-	checkErr(err)
-	db.Close()
+// TODO: put resetDB behind a flag, insert all of the below phone numbers into table:
+var numbers []string = []string{
+	"1234567890",
+	"123 456 7891",
+	"(123) 456 7892",
+	"(123) 456-7893",
+	"123-456-7894",
+	"123-456-7890",
+	"1234567892",
+	"(123)456-7892",
+}
 
+func main() {
+	doResetDB := flag.Bool("r", false, "(Re)create the database on startup")
+	flag.Parse()
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", host, port, user, password)
+	if *doResetDB {
+		db, err := sql.Open("postgres", psqlInfo)
+		checkErr(err)
+		err = resetDB(db, dbName)
+		checkErr(err)
+		db.Close()
+	}
 	psqlInfo = fmt.Sprintf("%s dbname=%s", psqlInfo, dbName)
-	db, err = sql.Open("postgres", psqlInfo)
+	db, err := sql.Open("postgres", psqlInfo)
 	checkErr(err)
 	defer db.Close()
 
 	checkErr(createPhoneNumbersTable(db))
-	id, err := insertPhone(db, "1234567890")
-	checkErr(err)
-	fmt.Println("New record ID:", id)
+	for _, n := range numbers {
+		id, err := insertPhone(db, n)
+		checkErr(err)
+		fmt.Println("New record ID:", id)
+	}
 }
 
 func checkErr(err error) {
