@@ -9,6 +9,11 @@ import (
 	_ "github.com/lib/pq" // https://www.calhoun.io/why-we-import-sql-drivers-with-the-blank-identifier/
 )
 
+type phone struct {
+	id     int
+	number string
+}
+
 const (
 	host     = "localhost"
 	port     = 5432
@@ -46,11 +51,21 @@ func main() {
 	checkErr(err)
 	defer db.Close()
 
+	var id int
 	checkErr(createPhoneNumbersTable(db))
 	for _, n := range numbers {
-		id, err := insertPhone(db, n)
+		id, err = insertPhone(db, n)
 		checkErr(err)
-		fmt.Println("New record ID:", id)
+	}
+
+	num, err := getPhone(db, id)
+	checkErr(err)
+	fmt.Println("Last inserted number is", num)
+
+	phones, err := allPhones(db)
+	checkErr(err)
+	for _, p := range phones {
+		fmt.Printf("%+v\n", p)
 	}
 }
 
@@ -68,6 +83,37 @@ func insertPhone(db *sql.DB, phone string) (int, error) {
 		return -1, err
 	}
 	return id, nil
+}
+
+func getPhone(db *sql.DB, id int) (string, error) {
+	var number string
+	err := db.QueryRow("SELECT value FROM phone_numbers WHERE id=$1", id).Scan(&number)
+	if err != nil {
+		return "", err
+	}
+	return number, nil
+}
+
+func allPhones(db *sql.DB) ([]phone, error) {
+	rows, err := db.Query("SELECT id, value FROM phone_numbers")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []phone
+
+	for rows.Next() {
+		var p phone
+		if err := rows.Scan(&p.id, &p.number); err != nil {
+			return nil, err
+		}
+		result = append(result, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func createPhoneNumbersTable(db *sql.DB) error {
