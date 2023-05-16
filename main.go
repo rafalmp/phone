@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	_ "github.com/lib/pq" // https://www.calhoun.io/why-we-import-sql-drivers-with-the-blank-identifier/
+	phonedb "github.com/rafalmp/phone/db"
 )
 
 type phone struct {
@@ -39,11 +40,7 @@ func main() {
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", host, port, user, password)
 	if *doResetDB {
-		db, err := sql.Open("postgres", psqlInfo)
-		checkErr(err)
-		err = resetDB(db, dbName)
-		checkErr(err)
-		db.Close()
+		checkErr(phonedb.Reset("postgres", psqlInfo, dbName))
 	}
 	psqlInfo = fmt.Sprintf("%s dbname=%s", psqlInfo, dbName)
 	db, err := sql.Open("postgres", psqlInfo)
@@ -163,22 +160,6 @@ func createPhoneNumbersTable(db *sql.DB) error {
 	)`
 	_, err := db.Exec(statement)
 	return err
-}
-
-func resetDB(db *sql.DB, name string) error {
-	_, err := db.Exec("DROP DATABASE IF EXISTS " + name)
-	if err != nil {
-		return err
-	}
-	return createDB(db, name)
-}
-
-func createDB(db *sql.DB, name string) error {
-	_, err := db.Exec("CREATE DATABASE " + name)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func normalize(phone string) string {
