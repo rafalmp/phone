@@ -42,13 +42,14 @@ func main() {
 	if *doResetDB {
 		checkErr(phonedb.Reset("postgres", psqlInfo, dbName))
 	}
+
 	psqlInfo = fmt.Sprintf("%s dbname=%s", psqlInfo, dbName)
+	checkErr(phonedb.Migrate("postgres", psqlInfo))
 	db, err := sql.Open("postgres", psqlInfo)
 	checkErr(err)
 	defer db.Close()
 
 	var id int
-	checkErr(createPhoneNumbersTable(db))
 	for _, n := range numbers {
 		id, err = insertPhone(db, n)
 		checkErr(err)
@@ -150,16 +151,6 @@ func allPhones(db *sql.DB) ([]phone, error) {
 	}
 
 	return result, nil
-}
-
-func createPhoneNumbersTable(db *sql.DB) error {
-	statement := `
-	CREATE TABLE IF NOT EXISTS phone_numbers (
-		id SERIAL,
-		value VARCHAR(255)
-	)`
-	_, err := db.Exec(statement)
-	return err
 }
 
 func normalize(phone string) string {
